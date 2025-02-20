@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>윤선생 어휘노트 음원 플레이어</title>
+    <style>
+        :root {
+            --seek-before-width: 0;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(45deg, #FFC2C2, #FFE7C2);
+            font-family: 'NanumGothic', Arial, sans-serif;
+            margin: 0;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #696969;
+            margin-bottom: 10px;
+        }
+        #currentTrack {
+            font-weight: bold;
+            color: #49BBBD;
+            margin-bottom: 10px;
+        }
+        .audio_container {
+            width: 90%;
+            max-width: 460px;
+            background-color: rgba(255,255,255, 0.6);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .playlist {
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255,255,255, 0.8);
+            border-radius: 10px;
+            box-shadow: 1px 1px 4px rgba(0,0,0, 0.25);
+        }
+        .playlist ul {
+            padding: 0;
+            margin: 0;
+        }
+        .playlist li {
+            list-style: none;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            font-size: 15px;
+            color: #7C7C7C;
+            display: flex;
+            justify-content: space-between;
+        }
+        .playlist li:hover {
+            background: rgba(240,240,240, 0.8);
+        }
+        .playlist li.active {
+            background: rgba(13, 120, 122, 0.8);
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="audio_container">
+        <div class="title">단어 학습 MP3 플레이어</div>
+        <select id="folderSelect" onchange="changeFolder()">
+            <option value="Phonics">Phonics</option>
+            <option value="Rookie & Rising Star">Rookie & Rising Star</option>
+            <option value="All-Star & MVP">All-Star & MVP</option>
+            <option value="중고등 Level 1~2">중고등 Level 1~2</option>
+            <option value="중고등 Level 3~4">중고등 Level 3~4</option>
+            <option value="중고등 Level 5~6">중고등 Level 5~6</option>
+            <option value="중고등 Level 7~9">중고등 Level 7~9</option>
+        </select>
+        <p id="currentTrack">현재 재생 중: 없음</p>
+        <audio id="audioPlayer" controls></audio>
+        <div class="playlist">
+            <ul id="audioList"></ul>
+        </div>
+    </div>
+<script>
+const baseFolderPath = "https://app.yoons.com/mobile/beflwords/vocanote/";
+let audioFiles = [];
+let currentFolder = "Phonics";
+let currentIndex = 0;
+let folderFiles = {};
+
+// JSON 파일 불러오기
+fetch("folderFiles.json")
+    .then(response => response.json())
+    .then(data => {
+        folderFiles = data;
+        changeFolder();  // 데이터 로드 후 기본 폴더 변경 함수 실행
+    })
+    .catch(error => console.error("JSON 파일을 불러오는 중 오류 발생:", error));
+
+function changeFolder() {
+    currentFolder = document.getElementById("folderSelect").value;
+    audioFiles = folderFiles[currentFolder] || [];
+    currentIndex = 0;
+    updatePlaylistView();
+}
+
+function playTrack(index) {
+    if (index < audioFiles.length) {
+        currentIndex = index;
+        document.getElementById("audioPlayer").src = `${baseFolderPath}${currentFolder}/${audioFiles[currentIndex]}`;
+        document.getElementById("currentTrack").textContent = "현재 재생 중: " + audioFiles[currentIndex];
+        updatePlaylistView();
+        document.getElementById("audioPlayer").play();
+    }
+}
+    // 다음 트랙을 재생하는 함수 추가
+function playNextTrack() {
+    if (currentIndex + 1 < audioFiles.length) {
+        playTrack(currentIndex + 1);
+    }
+}
+
+function updatePlaylistView() {
+    const audioList = document.getElementById("audioList");
+    audioList.innerHTML = "";
+    audioFiles.forEach((file, i) => {
+        const li = document.createElement("li");
+        li.textContent = file;
+        li.onclick = () => playTrack(i);
+        if (i === currentIndex) {
+            li.classList.add("active");
+        }
+        audioList.appendChild(li);
+    });
+}
+    // 오디오 재생이 끝나면 자동으로 다음 곡 재생
+document.getElementById("audioPlayer").addEventListener("ended", playNextTrack);
+
+
+    changeFolder();
+</script>
+
+
+</body>
+</html>
