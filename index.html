@@ -91,63 +91,85 @@
         </div>
     </div>
 <script>
-const baseFolderPath = "https://app.yoons.com/mobile/beflwords/vocanote/";
-let audioFiles = [];
-let currentFolder = "Phonics";
-let currentIndex = 0;
-let folderFiles = {};
+  'use strict';
 
-// JSON 파일 불러오기
-fetch("folderFiles.json")
-    .then(response => response.json())
-    .then(data => {
-        folderFiles = data;
-        changeFolder();  // 데이터 로드 후 기본 폴더 변경 함수 실행
-    })
-    .catch(error => console.error("JSON 파일을 불러오는 중 오류 발생:", error));
-
-function changeFolder() {
-    currentFolder = document.getElementById("folderSelect").value;
-    audioFiles = folderFiles[currentFolder] || [];
-    currentIndex = 0;
-    updatePlaylistView();
-}
-
-function playTrack(index) {
-    if (index < audioFiles.length) {
-        currentIndex = index;
-        document.getElementById("audioPlayer").src = `${baseFolderPath}${currentFolder}/${audioFiles[currentIndex]}`;
-        document.getElementById("currentTrack").textContent = "현재 재생 중: " + audioFiles[currentIndex];
-        updatePlaylistView();
-        document.getElementById("audioPlayer").play();
-    }
-}
-    // 다음 트랙을 재생하는 함수 추가
-function playNextTrack() {
-    if (currentIndex + 1 < audioFiles.length) {
-        playTrack(currentIndex + 1);
-    }
-}
-
-function updatePlaylistView() {
+  document.addEventListener('DOMContentLoaded', async () => {
+    const baseFolderPath = "https://app.yoons.com/mobile/beflwords/vocanote/";
+    const folderSelect = document.getElementById("folderSelect");
+    const audioPlayer = document.getElementById("audioPlayer");
+    const currentTrackLabel = document.getElementById("currentTrack");
     const audioList = document.getElementById("audioList");
-    audioList.innerHTML = "";
-    audioFiles.forEach((file, i) => {
+    const playlistContainer = document.querySelector(".playlist");
+    
+    let folderFiles = {};
+    let currentFolder = folderSelect.value;
+    let audioFiles = [];
+    let currentIndex = 0;
+
+    // JSON 파일을 불러와서 folderFiles 객체 업데이트
+    async function loadFolderFiles() {
+      try {
+        const response = await fetch('folderFiles.json');
+        folderFiles = await response.json();
+        changeFolder();
+      } catch (error) {
+        console.error("파일 목록을 불러오는 중 오류 발생:", error);
+      }
+    }
+
+    const updatePlaylistView = () => {
+      audioList.innerHTML = "";
+      audioFiles.forEach((file, i) => {
         const li = document.createElement("li");
         li.textContent = file;
-        li.onclick = () => playTrack(i);
+        li.addEventListener("click", () => playTrack(i));
         if (i === currentIndex) {
-            li.classList.add("active");
+          li.classList.add("active");
         }
         audioList.appendChild(li);
-    });
-}
-    // 오디오 재생이 끝나면 자동으로 다음 곡 재생
-document.getElementById("audioPlayer").addEventListener("ended", playNextTrack);
+      });
+    };
 
+    const playTrack = (index) => {
+      if (index >= 0 && index < audioFiles.length) {
+        currentIndex = index;
+        const fileName = audioFiles[currentIndex];
+        audioPlayer.src = `${baseFolderPath}${currentFolder}/${fileName}`;
+        currentTrackLabel.textContent = `현재 재생 중: ${fileName}`;
+        updatePlaylistView();
+        audioPlayer.play();
+      }
+    };
 
-    changeFolder();
+    const playNextTrack = () => {
+      if (currentIndex + 1 < audioFiles.length) {
+        playTrack(currentIndex + 1);
+      }
+    };
+
+    const changeFolder = () => {
+      currentFolder = folderSelect.value;
+      audioFiles = folderFiles[currentFolder] || [];
+      currentIndex = 0;
+      updatePlaylistView();
+      currentTrackLabel.textContent = "현재 재생 중: 없음";
+      audioPlayer.src = "";
+    };
+
+    const initEventListeners = () => {
+      audioPlayer.addEventListener("ended", playNextTrack);
+      folderSelect.addEventListener("change", changeFolder);
+    };
+
+    const init = async () => {
+      initEventListeners();
+      await loadFolderFiles(); // JSON 파일을 불러온 후 플레이리스트 갱신
+    };
+
+    init();
+  });
 </script>
+
 
 
 </body>
